@@ -60,7 +60,7 @@ mode_help ='''Tomcat monitorizacion mode:
     mem:    Tomcat server used percentage memory status, warning and critical values
             requiered in percentage.
     thread: Tomcat connectors Threads used, warning and critical values requiered.
-            The parameter connector is also requiered.
+            The parameter connector is optional, if not exists, all connector were shown.
 '''
 tree_xml=None
 
@@ -229,6 +229,8 @@ conn_parameters.add_argument('-a','--authentication',
 conn_parameters.add_argument('-U','--URL',
                     default = "/manager/status?XML=true",
                     help='''Tomcat XML status page URL "/manager/status?XML=true" by default''')
+conn_parameters.add_argument('-C','--connector',
+                    help='''Connector name, used in thread mode''')
 
 parameters = parser.add_argument_group('Monitirization parameters',
              'Parameters for tomcat monitorization')
@@ -336,19 +338,34 @@ if args.mode == 'thread':
         if (args.warning==None) or (args.critical==None):
             parser.print_usage()
             parser.exit(status['UNKNOWN'],
-                        'ERROR: Warning and critical values requiered with mode "thread"\n')
-        for connector in tree_xml.findall('./connector'):
-            connector_name = str(connector.get('name'))
-            thread = connector.find('./threadInfo')
-            max_thread = float(thread.get('maxThreads'))
-            busy_thread = float(thread.get('currentThreadsBusy'))
-            iter_status=define_status(busy_thread,args.warning,args.critical)
-            if status[iter_status] > status[exit_status]:
-                    exit_status=iter_status
-            output = output + '/threads connector:%s %0.0f busy of %0.0f '%(connector_name,busy_thread,max_thread)
-            perfdata = perfdata + "'conn %s'=%0.0f;%s;%s;0;%0.0f "%(connector_name,busy_thread,args.warning,args.critical,max_thread)
+                        'ERROR: Warning and critical values of number of threads open is requiered with mode "thread"\n')
+        if(args.connector==None):
+            if (args.verbosity>0): print "Finding all connectors"
+            for connector in tree_xml.findall('./connector'):
+                connector_name = str(connector.get('name'))
+                if (args.verbosity>0): print "Find %s connector"%(connector_name)
+                thread = connector.find('./threadInfo')
+                max_thread = float(thread.get('maxThreads'))
+                busy_thread = float(thread.get('currentThreadsBusy'))
+                iter_status=define_status(busy_thread,args.warning,args.critical)
+                if status[iter_status] > status[exit_status]:
+                        exit_status=iter_status
+                output = output + '/connector:%s %0.0f threads busy of %0.0f '%(connector_name,busy_thread,max_thread)
+                perfdata = perfdata + "'conn %s'=%0.0f;%s;%s;0;%0.0f "%(connector_name,busy_thread,args.warning,args.critical,max_thread)
 
-
+        else:
+            if (args.verbosity>0): print "Finding %s connector"%(args.connector)
+            for connector in tree_xml.findall('./connector'):
+                connector_name = str(connector.get('name'))
+                if (args.connector==connector_name):
+                    if (args.verbosity>0):
+                        print "Find %s connector"%(connector_name)
+                    thread = connector.find('./threadInfo')
+                    max_thread = float(thread.get('maxThreads'))
+                    busy_thread = float(thread.get('currentThreadsBusy'))
+                    exit_status=define_status(busy_thread,args.warning,args.critical)
+                    output = output + 'connector:%s %0.0f threads busy of %0.0f '%(connector_name,busy_thread,max_thread)
+                    perfdata = perfdata + "'conn %s'=%0.0f;%s;%s;0;%0.0f "%(connector_name,busy_thread,args.warning,args.critical,max_thread)
 
 if output=='':
     output = "ERROR: no output"
@@ -360,5 +377,3 @@ if longoutput!="":
     message = message + longoutput
 print message
 sys.exit(status[exit_status])
-
-
