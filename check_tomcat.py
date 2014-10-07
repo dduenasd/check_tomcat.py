@@ -1,20 +1,32 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# I'm a Spanish speaker, my English is basic but I try to write everything in English.
+# I'm a Spanish speaker, my English is basic but I try to write everything in
+# English.
 # Many translations have been made with automatic translators.
 # If something is not meant pray excuse me.
 # ¡VAMOS A ELLO! (LET'S GO!)
 
 #-------------------------------------------------------------------------------
 # Name:        check_tomcat.pl
+#
+# Author:      Daniel Dueñas
+#
 # Purpose:
 # Plugin para chequeo de servidor tomcat para nagios
 # Check tomcat server plugin for nagios
-# It plugin uses the status?XML=true page of tomcat, this page usually is:
-# http://host-name:8080/manager/status?XML=true
+# This plugin uses the tomcat manager webapp, this app usually is located in the
+# URL:
+# http://tomcat-host-name:xxxx/manager
+# which "tomcat-host-name" is the dns name or ip of the tomcat server and "xxxx"
+# is the port number of the tomcat service (the tomcat port is 8080 by default)
 #
-# Author:      Daniel Dueñas
+# This plugin can monitorize this items:
+# 1- tomcat server status
+# 2- tomcat server memory
+# 3- tomcat server thread connectors
+# 4- application status on tomcat server
+#
 #
 # This plugin conforms to the Nagios Plugin Development Guidelines
 # https://nagios-plugins.org/doc/guidelines.html
