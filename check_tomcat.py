@@ -179,8 +179,8 @@ def sizeof_fmt(num):
         return None
 
 #open tomcat status html
-def read_page(host,port,url,user,password):
-    url_tomcat = "http://"+host+":"+port+url
+def read_page_status_XML(host,port,url,user,password):
+    url_tomcat = "http://"+host+":"+port+url+"/status?XML=true"
     if args.verbosity:
         print "connection url: %s\n"%(url_tomcat)
 
@@ -204,6 +204,29 @@ def read_page(host,port,url,user,password):
         print ET.dump(root)
 
     return root
+
+#Define the version of the tomcat server
+def read_page(host,port,url,user,password):
+    url_tomcat = "http://"+host+":"+port+url
+    if args.verbosity:
+        print "connection url: %s\n"%(url_tomcat)
+
+    password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+    password_mgr.add_password(None,url_tomcat,user,password)
+    handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+    opener=urllib2.build_opener(handler)
+    urllib2.install_opener(opener)
+    req = urllib2.Request(url_tomcat)
+    handle = urllib2.urlopen(req,None,5)
+
+    # Store all page in a variable
+    page = handle.read()
+    # End of Open manager status
+    if args.verbosity>2:
+        print "page "+url_tomcat+" content:"
+        print page
+    return page
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -239,8 +262,8 @@ conn_parameters.add_argument('-a','--authentication',
                     default = "tomcat",
                     help="Tomcat authentication password")
 conn_parameters.add_argument('-U','--URL',
-                    default = "/manager/status?XML=true",
-                    help='''Tomcat XML status page URL "/manager/status?XML=true" by default''')
+                    default = "/manager",
+                    help='''Tomcat manager app url "/manager" by default''')
 conn_parameters.add_argument('-C','--connector',
                     help='''Connector name, used in thread mode''')
 
@@ -285,8 +308,9 @@ if args.verbosity:
 #MODE OPTIONS LOGIC
 #-------------------------------------------------------------------------
 #Error handling
+
 try:
-   tree_xml=read_page(args.host,args.port,args.URL,args.user,args.authentication)
+   tree_xml=read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
 except urllib2.HTTPError as e:
    output="ERROR: The server couldn\'t fulfill the request. Error code: %s" %(e.code)
    exit_status='UNKNOWN'
@@ -299,6 +323,11 @@ except socket.error as e:
 except:
    output = "ERROR: Unexpected error (I'm damned if I know!): %s"%(sys.exc_info()[0])
    exit_status='UNKNOWN'
+
+url_serverinfo = args.URL+"/serverinfo"
+page_serverinfo = read_page(args.host,args.port,url_serverinfo,args.user,args.authentication)
+if args.verbosity:
+    print page_serverinfo
 
 # status option
 if args.mode == 'status':
