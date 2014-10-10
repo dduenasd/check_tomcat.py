@@ -324,7 +324,6 @@ if args.verbosity:
 #MODE OPTIONS LOGIC
 #-------------------------------------------------------------------------
 
-
 #read serviceinfo
 url_serverinfo = args.URL+"/serverinfo"
 page_serverinfo,error_serverinfo = read_page(args.host,args.port,url_serverinfo,args.user,args.authentication)
@@ -371,7 +370,7 @@ if args.mode == 'status':
     if (error_serverinfo!=True):
         # check if the first line of serverinfo content "OK"
         if (tomcat_status_string.find("OK")!=-1):
-            output = "The Tomcat server is OK"
+            output = "The "+tomcat_version_string+" server is OK"
             exit_status='OK'
         else:
             output="This server is not a tomcat server or "+url_serverinfo+" is not a the manager app server info page"
