@@ -21,7 +21,7 @@
 # which "tomcat-host-name" is the dns name or ip of the tomcat server and "xxxx"
 # is the port number of the tomcat service (the tomcat port is 8080 by default)
 #
-# This plugin can monitorize this items:
+# This plugin can check this items:
 # 1- tomcat server status
 # 2- tomcat server memory
 # 3- tomcat server thread connectors
@@ -58,7 +58,7 @@ from math import log
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #VARIABLE DEFINITIONS
 #--------------------------------------------------------------------------
-version="1.0"   #Plugin version
+version="2.0"   #Plugin version
 status = { 'OK' : 0 , 'WARNING' : 1, 'CRITICAL' : 2 , 'UNKNOWN' : 3}
 exit_status = 'OK'
 output = ""
@@ -69,12 +69,16 @@ plugin_description ='''Nagios plugin for check an apache tomcat server
 '''
 mode_help ='''Tomcat monitorizacion mode:
     status: The status of tomcat server
-    mem:    Tomcat server used percentage memory status, warning and critical values
-            requiered in percentage.
+    mem:    Tomcat server used percentage memory status, warning and critical
+            values. Requiered in percentage.
     thread: Tomcat connectors Threads used, warning and critical values requiered.
             The parameter connector is optional, if not exists, all connector were shown.
+    app:    Application status in tomcat server, the name of the application
+            must be defined with the parameter -n or --nameapp.
+            This option check the status of java application running on tomcat server
 '''
 tree_xml=None
+tomcat_version=None
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -118,15 +122,16 @@ def define_range(str):
 #Critical and warning function resolve
 #This function return exit_status: OK,WARNING,CRITICAL or UNKNOWN string
 def define_status(value,warning,critical):
-    warning_range = define_range(warning)  #Define warning range
-    critical_range = define_range(critical)#Define critical range
-    val=float(value)                       #The value
+    warning_range = define_range(warning)   #Define warning range
+    critical_range = define_range(critical) #Define critical range
+    val=float(value)                        #The value
     exit_status="UNKNOWN"                   #status by default
 
     if args.verbosity:
         print "Value for test: "+str(value)
         print "Warning range (min:%s max:%s in_range:%s)"%(str(warning_range[0]),str(warning_range[1]),str(warning_range[2]))
         print "Critical range (min:%s max:%s in_range:%s)"%(str(critical_range[0]),str(critical_range[1]),str(critical_range[2]))
+        print ""
 
     #value into the range range(x:y:True)
     if warning_range[2]==True and critical_range[2]==True:
@@ -139,6 +144,7 @@ def define_status(value,warning,critical):
                 exit_status="CRITICAL"
         else:
             exit_status="OK"
+
     #value out of range range(x:y:False)
     elif warning_range[2]==False and critical_range[2]==False:
         if (warning_range[1]<critical_range[1]) or (warning_range[0]>critical_range[0]):
@@ -178,54 +184,61 @@ def sizeof_fmt(num):
     else:
         return None
 
-#open tomcat status html
+#open and read XML from tomcat manager/status?XML=true
 def read_page_status_XML(host,port,url,user,password):
-    url_tomcat = "http://"+host+":"+port+url+"/status?XML=true"
-    if args.verbosity:
-        print "connection url: %s\n"%(url_tomcat)
 
-    password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-    password_mgr.add_password(None,url_tomcat,user,password)
-    handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-    opener=urllib2.build_opener(handler)
-    urllib2.install_opener(opener)
-    req = urllib2.Request(url_tomcat)
-    handle = urllib2.urlopen(req,None,5)
-
-    # Store all page in a variable
-    page = handle.read()
+    url_status_xml = url+"/status?XML=true"
+    page,error_page = read_page(host,port,url_status_xml,user,password)
     # End of Open manager status
-    if args.verbosity>2:
-        print "page "+url_tomcat+" content:"
-        print page
+    if(error_page):
+        return page,error_page
+    else:
     # Read xml string
-    root = ET.fromstring(page)
-    if args.verbosity>1:
-        print ET.dump(root)
+        root = ET.fromstring(page)
+        #show XML tree
+        if args.verbosity>1:
+            print "XML tree:"
+            print ET.dump(root)
+            print ""
+        return root,False
 
-    return root
-
-#Define the version of the tomcat server
+#Read a html manager page
 def read_page(host,port,url,user,password):
+    error=False
     url_tomcat = "http://"+host+":"+port+url
     if args.verbosity:
         print "connection url: %s\n"%(url_tomcat)
 
-    password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-    password_mgr.add_password(None,url_tomcat,user,password)
-    handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-    opener=urllib2.build_opener(handler)
-    urllib2.install_opener(opener)
-    req = urllib2.Request(url_tomcat)
-    handle = urllib2.urlopen(req,None,5)
+    try:
+        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None,url_tomcat,user,password)
+        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+        opener=urllib2.build_opener(handler)
+        urllib2.install_opener(opener)
+        req = urllib2.Request(url_tomcat)
+        handle = urllib2.urlopen(req,None,5)
+        # Store all page in a variable
+        page = handle.read()
+        # End of Open manager status
+    except urllib2.HTTPError as e:
+       page="ERROR: The server couldn\'t fulfill the request. Error code: %s" %(e.code)
+       error = True
+    except urllib2.URLError as e:
+       page = 'ERROR: We failed to reach a server. Reason: %s' %(e.reason)
+       error = True
+    except socket.error as e:
+       page = "ERROR: Dammit! I can't connect with host "+args.host+":"+args.port
+       error = True
+    except:
+       page = "ERROR: Unexpected error (I'm damned if I know!): %s"%(sys.exc_info()[0])
+       error = True
 
-    # Store all page in a variable
-    page = handle.read()
-    # End of Open manager status
+    # Show page if -vvv option
     if args.verbosity>2:
         print "page "+url_tomcat+" content:"
         print page
-    return page
+        print ""
+    return page,error
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -267,8 +280,8 @@ conn_parameters.add_argument('-U','--URL',
 conn_parameters.add_argument('-C','--connector',
                     help='''Connector name, used in thread mode''')
 
-parameters = parser.add_argument_group('Monitirization parameters',
-             'Parameters for tomcat monitorization')
+parameters = parser.add_argument_group('Check parameters',
+             'Parameters for tomcat check')
 parameters.add_argument('-w','--warning',
                     help="Warning value")
 parameters.add_argument('-c','--critical',
@@ -277,10 +290,13 @@ parameters.add_argument('-m','--mode',
                     choices=['status','mem','thread'],
                     help=mode_help,
                     required=True)
+parameters.add_argument('-n','--nameapp',
+                    help="Name of the java application you want to check")
 
 #Corrects negative numbers in arguments parser
 for i, arg in enumerate(sys.argv):
-  if (arg[0] == '-') and arg[1].isdigit(): sys.argv[i] = ' ' + arg
+    if arg!="": #prevent an empty character, as ""
+        if (arg[0] == '-') and arg[1].isdigit(): sys.argv[i] = ' ' + arg
 # arguments parse
 args = parser.parse_args()
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -307,39 +323,75 @@ if args.verbosity:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #MODE OPTIONS LOGIC
 #-------------------------------------------------------------------------
-#Error handling
 
-try:
-   tree_xml=read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
-except urllib2.HTTPError as e:
-   output="ERROR: The server couldn\'t fulfill the request. Error code: %s" %(e.code)
-   exit_status='UNKNOWN'
-except urllib2.URLError as e:
-   output = 'ERROR: We failed to reach a server. Reason: %s' %(e.reason)
-   exit_status='UNKNOWN'
-except socket.error as e:
-   output = "ERROR: Dammit! I can't connect with host "+args.host+":"+args.port
-   exit_status='UNKNOWN'
-except:
-   output = "ERROR: Unexpected error (I'm damned if I know!): %s"%(sys.exc_info()[0])
-   exit_status='UNKNOWN'
 
+#read serviceinfo
 url_serverinfo = args.URL+"/serverinfo"
-page_serverinfo = read_page(args.host,args.port,url_serverinfo,args.user,args.authentication)
-if args.verbosity:
+page_serverinfo,error_serverinfo = read_page(args.host,args.port,url_serverinfo,args.user,args.authentication)
+if args.verbosity>2:
+    print "serverinfo:"
     print page_serverinfo
 
+# if error, try the manager/text/serverinfo, because in tomcat 7 change the path
+# of the manager app commands
+if(error_serverinfo):
+    url_serverinfo = args.URL+"/text/serverinfo"
+    page_serverinfo,error_serverinfo = read_page(args.host,args.port,url_serverinfo,args.user,args.authentication)
+# Now it is an error yes or yes
+if(error_serverinfo):
+    output = page_serverinfo
+    exit_status='UNKNOWN'
+if(error_serverinfo==False):
+    # read tomcat version in serverinfo
+    serverinfo = page_serverinfo.splitlines()
+    if args.verbosity>1:
+        print "Server info split: "
+        print serverinfo
+        print ""
+    tomcat_version_string = (serverinfo[1].split(":"))[1]
+    tomcat_status_string = serverinfo[0]
+    if args.verbosity>2:
+        print "tomcat_version_string: "+tomcat_version_string
+        print "tomcat_status_string: "+tomcat_status_string
+    #tomcat version is read in line 2 of serverinfo
+    #example:" Apache Tomcat/7.0.53", choose the "7"
+    tomcat_version = (tomcat_version_string.split("/"))[1].split(".")[0]
+    if args.verbosity:
+        print "tomcat_version: "+tomcat_version
+    #If i can't read the tomcat version because it is not a number
+    if (tomcat_version.isdigit()==False):
+        tomcat_version=0
+        if args.verbosity:
+            print "WARNING: I can't read the tomcat version"
+
 # status option
+#-----------------------------------------------------------------------------
 if args.mode == 'status':
-    if tree_xml!=None:
-        if tree_xml.tag=='status':    #The first tag of xml is "status"
-            output="The Tomcat server is up"
+    # If serverinfo page is correct
+    if (error_serverinfo!=True):
+        # check if the first line of serverinfo content "OK"
+        if (tomcat_status_string.find("OK")!=-1):
+            output = "The Tomcat server is OK"
             exit_status='OK'
         else:
-            output="This server is not a tomcat server or not status xml page"
+            output="This server is not a tomcat server or "+url_serverinfo+" is not a the manager app server info page"
             exit_status='UNKNOWN'
+    # if serverinfo page is not correct try with th status xml page
     else:
-        exit_status='CRITICAL'
+        tree_xml,error_status_xml = read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
+        #check if page status xml is OK
+        if error_status_xml!=True:
+            if (tree_xml!=None):
+                if tree_xml.tag=='status':    #The first tag of xml is "status"
+                    output="The Tomcat server is OK, but page serverinfo not work"
+                    exit_status='OK'
+                else:
+                    output="This server is not a tomcat server or not status xml page"
+                    exit_status='UNKNOWN'
+            else:
+                output="I can't read either serviceinfo or serverstatus, this server not seems a Tomcat Server"
+                exit_status='CRITICAL'
+
 
 # mem option
 if args.mode == 'mem':
