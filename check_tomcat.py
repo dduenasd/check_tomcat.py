@@ -370,7 +370,7 @@ if args.mode == 'status':
     if (error_serverinfo!=True):
         # check if the first line of serverinfo content "OK"
         if (tomcat_status_string.find("OK")!=-1):
-            output = "The "+tomcat_version_string+" server is OK"
+            output = tomcat_version_string+" server is OK"
             exit_status='OK'
         else:
             output="This server is not a tomcat server or "+url_serverinfo+" is not a the manager app server info page"
@@ -394,34 +394,40 @@ if args.mode == 'status':
 
 # mem option
 if args.mode == 'mem':
-    if tree_xml!=None:
-        #control warning and critical values
-        if (args.warning==None) or (args.critical==None):
-            parser.print_usage()
-            parser.exit(status['UNKNOWN'],
-                        'ERROR: Warning and critical values requiered with mode "mem"\n')
-        memory = tree_xml.find('.//memory')
-        free_memory = float(memory.get('free'))
-        total_memory = float(memory.get('total'))
-        max_memory = float(memory.get('max'))
-        available_memory = free_memory + max_memory - total_memory
-        used_memory = max_memory - available_memory
-        percent_used_memory = float((used_memory * 100)/max_memory)
-        if args.verbosity:
-            print "mode: mem(memory)"
-            if args.verbosity > 1:
-                print "free:%0.1f total:%0.1f max:%0.1f available:%0.1f used:%0.1f percent_used:%0.2f"%(free_memory,
-                                        total_memory,max_memory,available_memory,used_memory,percent_used_memory)
-            print "free_memory:%s total memory:%s max_memory:%s"%(sizeof_fmt(free_memory),sizeof_fmt(total_memory),sizeof_fmt(max_memory))
-            print "available_memory = free_memory + max_memory - total_memory -->  %s" %(sizeof_fmt(available_memory))
-            print "used_memory = max_memory - available_memory -->  %s" %(sizeof_fmt(used_memory))
-            print "percent_used_memory = (used_memory * 100)/max_memory  -->  %0.2f%%\n"%(percent_used_memory)
+    # read status xml for extract mem data
+    tree_xml,error_status_xml = read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
+    if error_status_xml:
+        output = tree_xml
+        exit_status = 'WARNING'
+    else:
+        if tree_xml!=None:
+            #control warning and critical values
+            if (args.warning==None) or (args.critical==None):
+                parser.print_usage()
+                parser.exit(status['UNKNOWN'],
+                            'ERROR: Warning and critical values requiered with mode "mem"\n')
+            memory = tree_xml.find('.//memory')
+            free_memory = float(memory.get('free'))
+            total_memory = float(memory.get('total'))
+            max_memory = float(memory.get('max'))
+            available_memory = free_memory + max_memory - total_memory
+            used_memory = max_memory - available_memory
+            percent_used_memory = float((used_memory * 100)/max_memory)
+            if args.verbosity:
+                print "mode: mem(memory)"
+                if args.verbosity > 1:
+                    print "free:%0.1f total:%0.1f max:%0.1f available:%0.1f used:%0.1f percent_used:%0.2f"%(free_memory,
+                                            total_memory,max_memory,available_memory,used_memory,percent_used_memory)
+                print "free_memory:%s total memory:%s max_memory:%s"%(sizeof_fmt(free_memory),sizeof_fmt(total_memory),sizeof_fmt(max_memory))
+                print "available_memory = free_memory + max_memory - total_memory -->  %s" %(sizeof_fmt(available_memory))
+                print "used_memory = max_memory - available_memory -->  %s" %(sizeof_fmt(used_memory))
+                print "percent_used_memory = (used_memory * 100)/max_memory  -->  %0.2f%%\n"%(percent_used_memory)
 
-        #Define status whit function
-        exit_status=define_status(percent_used_memory,args.warning,args.critical)
-        output="Used memory "+sizeof_fmt(used_memory)+" of "+sizeof_fmt(max_memory)+"(%0.2f%%)" %(percent_used_memory)
-        perfdata="'Used_memory'=%0.0f%%;%s;%s"%(percent_used_memory,args.warning,
-                                                    args.critical)
+            #Define status whit function
+            exit_status=define_status(percent_used_memory,args.warning,args.critical)
+            output="Used memory "+sizeof_fmt(used_memory)+" of "+sizeof_fmt(max_memory)+"(%0.2f%%)" %(percent_used_memory)
+            perfdata="'Used_memory'=%0.0f%%;%s;%s"%(percent_used_memory,args.warning,
+                                                        args.critical)
 
 # threads option
 if args.mode == 'thread':
