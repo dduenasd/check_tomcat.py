@@ -282,16 +282,17 @@ conn_parameters.add_argument('-C','--connector',
 
 parameters = parser.add_argument_group('Check parameters',
              'Parameters for tomcat check')
+parameters.add_argument('-n','--nameapp',
+                    help="Name of the java application you want to check, only for app mode")
 parameters.add_argument('-w','--warning',
                     help="Warning value")
 parameters.add_argument('-c','--critical',
                     help="Critical value")
 parameters.add_argument('-m','--mode',
-                    choices=['status','mem','thread'],
+                    choices=['status','mem','thread','app'],
                     help=mode_help,
                     required=True)
-parameters.add_argument('-n','--nameapp',
-                    help="Name of the java application you want to check")
+
 
 #Corrects negative numbers in arguments parser
 for i, arg in enumerate(sys.argv):
@@ -431,39 +432,45 @@ if args.mode == 'mem':
 
 # threads option
 if args.mode == 'thread':
-    if tree_xml!=None:
-        #control warning and critical values
-        if (args.warning==None) or (args.critical==None):
-            parser.print_usage()
-            parser.exit(status['UNKNOWN'],
-                        'ERROR: Warning and critical values of number of threads open is requiered with mode "thread"\n')
-        if(args.connector==None):
-            if (args.verbosity>0): print "Finding all connectors"
-            for connector in tree_xml.findall('./connector'):
-                connector_name = str(connector.get('name'))
-                if (args.verbosity>0): print "Find %s connector"%(connector_name)
-                thread = connector.find('./threadInfo')
-                max_thread = float(thread.get('maxThreads'))
-                busy_thread = float(thread.get('currentThreadsBusy'))
-                iter_status=define_status(busy_thread,args.warning,args.critical)
-                if status[iter_status] > status[exit_status]:
-                        exit_status=iter_status
-                output = output + '/connector:%s %0.0f threads busy of %0.0f '%(connector_name,busy_thread,max_thread)
-                perfdata = perfdata + "'conn %s'=%0.0f;%s;%s;0;%0.0f "%(connector_name,busy_thread,args.warning,args.critical,max_thread)
-
-        else:
-            if (args.verbosity>0): print "Finding %s connector"%(args.connector)
-            for connector in tree_xml.findall('./connector'):
-                connector_name = str(connector.get('name'))
-                if (args.connector==connector_name):
-                    if (args.verbosity>0):
-                        print "Find %s connector"%(connector_name)
+    # read status xml for extract mem data
+    tree_xml,error_status_xml = read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
+    if error_status_xml:
+        output = tree_xml
+        exit_status = 'WARNING'
+    else:
+        if tree_xml!=None:
+            #control warning and critical values
+            if (args.warning==None) or (args.critical==None):
+                parser.print_usage()
+                parser.exit(status['UNKNOWN'],
+                            'ERROR: Warning and critical values of number of threads open is requiered with mode "thread"\n')
+            if(args.connector==None):
+                if (args.verbosity>0): print "Finding all connectors"
+                for connector in tree_xml.findall('./connector'):
+                    connector_name = str(connector.get('name'))
+                    if (args.verbosity>0): print "Find %s connector"%(connector_name)
                     thread = connector.find('./threadInfo')
                     max_thread = float(thread.get('maxThreads'))
                     busy_thread = float(thread.get('currentThreadsBusy'))
-                    exit_status=define_status(busy_thread,args.warning,args.critical)
-                    output = output + 'connector:%s %0.0f threads busy of %0.0f '%(connector_name,busy_thread,max_thread)
+                    iter_status=define_status(busy_thread,args.warning,args.critical)
+                    if status[iter_status] > status[exit_status]:
+                            exit_status=iter_status
+                    output = output + '/connector:%s %0.0f threads busy of %0.0f '%(connector_name,busy_thread,max_thread)
                     perfdata = perfdata + "'conn %s'=%0.0f;%s;%s;0;%0.0f "%(connector_name,busy_thread,args.warning,args.critical,max_thread)
+
+            else:
+                if (args.verbosity>0): print "Finding %s connector"%(args.connector)
+                for connector in tree_xml.findall('./connector'):
+                    connector_name = str(connector.get('name'))
+                    if (args.connector==connector_name):
+                        if (args.verbosity>0):
+                            print "Find %s connector"%(connector_name)
+                        thread = connector.find('./threadInfo')
+                        max_thread = float(thread.get('maxThreads'))
+                        busy_thread = float(thread.get('currentThreadsBusy'))
+                        exit_status=define_status(busy_thread,args.warning,args.critical)
+                        output = output + 'connector:%s %0.0f threads busy of %0.0f '%(connector_name,busy_thread,max_thread)
+                        perfdata = perfdata + "'conn %s'=%0.0f;%s;%s;0;%0.0f "%(connector_name,busy_thread,args.warning,args.critical,max_thread)
 
 if output=='':
     output = "ERROR: no output"
