@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 GNU GENERAL PUBLIC LICENSE 
+=======
+GNU GENERAL PUBLIC LICENSE
+>>>>>>> 88e77163603a11a2b280b292e117790081680ea4
                        Version 2, June 1991
 
  Copyright (C) 1989, 1991 Free Software Foundation, Inc., <http://fsf.org/>
