@@ -18,6 +18,9 @@ This plugin can monitorize this items:
 3- tomcat server thread connectors
 4- application status on tomcat server
 
+This plugin uses the nagios plugin python template in
+https://github.com/dduenasd/nagios_plugin_template_python
+
  
 Requirements
 ============
@@ -27,8 +30,8 @@ Requirements
 - Tomcat Manager Webapp
 	The tomcat server for monitorize must be installed the manager web app
 	The documentation of the manager of tomcat:
-	http://tomcat.apache.org/tomcat-6.0-doc/manager-howto.html[Manager Howto Tomcat6]
-	http://tomcat.apache.org/tomcat-7.0-doc/manager-howto.html[Manager Howto Tomcat7]
+	http://tomcat.apache.org/tomcat-6.0-doc/manager-howto.html[Manager_Howto_Tomcat6]
+	http://tomcat.apache.org/tomcat-7.0-doc/manager-howto.html[Manager_Howto_Tomcat7]
 
 
 Installation
