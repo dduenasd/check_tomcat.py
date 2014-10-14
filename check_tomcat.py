@@ -374,7 +374,7 @@ if args.mode == 'status':
             output = tomcat_version_string+" server is OK"
             exit_status='OK'
         else:
-            output="This server is not a tomcat server or "+url_serverinfo+" is not a the manager app server info page"
+            output="This server is not a tomcat server or "+url_serverinfo+" is not the manager app server info page"
             exit_status='UNKNOWN'
     # if serverinfo page is not correct try with th status xml page
     else:
@@ -394,6 +394,7 @@ if args.mode == 'status':
 
 
 # mem option
+#-----------------------------------------------------------------------------
 if args.mode == 'mem':
     # read status xml for extract mem data
     tree_xml,error_status_xml = read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
@@ -431,6 +432,7 @@ if args.mode == 'mem':
                                                         args.critical)
 
 # threads option
+#-----------------------------------------------------------------------------
 if args.mode == 'thread':
     # read status xml for extract mem data
     tree_xml,error_status_xml = read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
@@ -471,6 +473,54 @@ if args.mode == 'thread':
                         exit_status=define_status(busy_thread,args.warning,args.critical)
                         output = output + 'connector:%s %0.0f threads busy of %0.0f '%(connector_name,busy_thread,max_thread)
                         perfdata = perfdata + "'conn %s'=%0.0f;%s;%s;0;%0.0f "%(connector_name,busy_thread,args.warning,args.critical,max_thread)
+
+# app option
+#-----------------------------------------------------------------------------
+if args.mode == 'app':
+    #Watch if nameapp is defined
+    if args.nameapp==None:
+        parser.print_usage()
+        parser.exit(status['UNKNOWN'],
+                            'ERROR: nameapp value requiered with mode "app"\n')
+    #for versions upper Tomcat 6
+    if (int(tomcat_version) > 6):
+        url_list = args.URL+"/text/list"
+    else:
+        url_list = args.URL+"/list"
+    #read application list page
+    page_list,error_list = read_page(args.host,args.port,url_list,args.user,args.authentication)
+    #Divide page_list in lines, each line is an application in the tomcat server
+    applist = page_list.splitlines()
+    if args.verbosity>1:
+        print "page_list split:"
+        print applist
+        print ""
+    #Applications in page list are like "/the_name_of_the_app"
+    matchapp = "/"+args.nameapp
+    match = False     #Flag
+    for application in applist:
+        application = application.split(":")
+        if matchapp == application[0]:
+            match=True
+            break
+    #If match app
+    if match:
+        if application[1]=="running":
+            output = args.nameapp+" is running"
+            exit_status="OK"
+        elif application[1]=="stopped":
+            output = args.nameapp+" is stopped"
+            exit_status="WARNING"
+            perfdata=application[2]
+        else:
+            output = "I can't understand the state "+application[1]
+            exit_status="WARNING"
+        #perfdata is the number of sessions for the application
+        perfdata="'sessions'="+application[2]
+    #If not match app
+    else:
+        output = "I can't find the "+matchapp+" application in the tomcat server"
+        exit_status="CRITICAL"
 
 if output=='':
     output = "ERROR: no output"
