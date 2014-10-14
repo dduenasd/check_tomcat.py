@@ -30,8 +30,8 @@ Requirements
 - Tomcat Manager Webapp
 	The tomcat server for monitorize must be installed the manager web app
 	The documentation of the manager of tomcat:
-	-Tomcat 6 -> [Manager_Howto_Tomcat6](http://tomcat.apache.org/tomcat-6.0-doc/manager-howto.html)
-	-Tomcat 7 -> [Manager_Howto_Tomcat7](http://tomcat.apache.org/tomcat-7.0-doc/manager-howto.html)
+	- Tomcat 6 -> [Manager_Howto_Tomcat6](http://tomcat.apache.org/tomcat-6.0-doc/manager-howto.html)
+	- Tomcat 7 -> [Manager_Howto_Tomcat7](http://tomcat.apache.org/tomcat-7.0-doc/manager-howto.html)
 
 
 Installation
