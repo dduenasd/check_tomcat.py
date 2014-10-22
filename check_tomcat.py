@@ -193,14 +193,19 @@ def read_page_status_XML(host,port,url,user,password):
     if(error_page):
         return page,error_page
     else:
-    # Read xml string
-        root = ET.fromstring(page)
+    # Read xml
+        try:
+            root = ET.fromstring(page)
+        #If can't parse XML
+        except ET.ParseError as e:
+            root="ERROR: I Can't understand the XML page. Error: %s" %(e)
+            error_page=True
         #show XML tree
         if args.verbosity>1:
             print "XML tree:"
             print ET.dump(root)
             print ""
-        return root,False
+        return root,error_page
 
 #Read a html manager page
 def read_page(host,port,url,user,password):
@@ -382,7 +387,7 @@ if args.mode == 'status':
     else:
         tree_xml,error_status_xml = read_page_status_XML(args.host,args.port,args.URL,args.user,args.authentication)
         #check if page status xml is OK
-        if error_status_xml!=True:
+        if (error_status_xml!=True):
             if (tree_xml!=None):
                 if tree_xml.tag=='status':    #The first tag of xml is "status"
                     output="The Tomcat server is OK, but page serverinfo not work"
@@ -393,6 +398,9 @@ if args.mode == 'status':
             else:
                 output="I can't read either serviceinfo or serverstatus, this server not seems a Tomcat Server"
                 exit_status='CRITICAL'
+        else:
+            output=tree_xml
+            exit_status='CRITICAL'
 
 
 # mem option
