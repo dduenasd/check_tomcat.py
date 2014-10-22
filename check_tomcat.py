@@ -367,6 +367,8 @@ if(error_serverinfo==False):
 # status option
 #-----------------------------------------------------------------------------
 if args.mode == 'status':
+    #Default state is CRITICAL
+    exit_status='CRITICAL'
     # If serverinfo page is correct
     if (error_serverinfo!=True):
         # check if the first line of serverinfo content "OK"
