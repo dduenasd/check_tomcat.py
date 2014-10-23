@@ -36,9 +36,33 @@ Requirements
 
 Installation
 ============
+Nagios Server:
 Copy check_tomcat.py file to a plugins nagios directory, usually in this path:
 /usr/local/nagios/libexec
 
+Tomcat Server:
+You must define a user for access to the manager webapp, the instructions for define an user:
+- [Define user for tomcat6](http://tomcat.apache.org/tomcat-7.0-doc/manager-howto.html#Configuring_Manager_Application_Access)
+- [Define user for tomcat7](http://tomcat.apache.org/tomcat-6.0-doc/manager-howto.html#Configuring_Manager_Application_Access)
+	Both of them (tomcat6 or tomcat 7) you must define an user with roles "manager-gui" and "manager-script", you must define a line in file tomcat_users.xml like that:
+	<user username="nagioscheck" password="my_password" roles="manager-gui,manager-script"/>
 
 Use
 ===
+First, we must test the plugin in the nagios server, in console, we can execute the plugin:
+<pre><code>$/path_nagios_libexec/check_tomcat.py</code></pre>
+
+This command show the use of the plugin, with:
+<pre><code>$/path_nagios_libexec/check_tomcat.py -h</code></pre>
+Show the help
+
+If I have a Tomcat Server with IP 10.20.40.20 and port 8080, for test the plugin, I can execute:
+<pre><code>$/path_nagios_libexeccheck_tomcat.py -H 10.20.40.20 -p 8080 -u nagioscheck -a pass -m status</pre></code>
+where 10.20.40.20 is the ip of the tomcat server, nagioscheck and pass are the credentials of tomcat manager, command output would be something like:
+<pre><code>OK  Apache Tomcat/7.0.53 server is OK</pre></code>
+
+If output is an error, you can execute the command with -v, -vv or -vvv for verbose output, this can help you to find the problem.
+
+
+	
+We must define a command in commands.cfg for nagios, an example:
