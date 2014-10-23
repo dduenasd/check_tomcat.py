@@ -492,45 +492,61 @@ if args.mode == 'app':
         parser.print_usage()
         parser.exit(status['UNKNOWN'],
                             'ERROR: nameapp value requiered with mode "app"\n')
-    #for versions upper Tomcat 6
-    if (int(tomcat_version) > 6):
-        url_list = args.URL+"/text/list"
+    #If serverinfo is not read
+    if error_serverinfo:
+        output="I can't read the serverinfo page. "+page_serverinfo
+        exit_status='UNKNOWN'
+    #If serverinfo is read
     else:
-        url_list = args.URL+"/list"
-    #read application list page
-    page_list,error_list = read_page(args.host,args.port,url_list,args.user,args.authentication)
-    #Divide page_list in lines, each line is an application in the tomcat server
-    applist = page_list.splitlines()
-    if args.verbosity>1:
-        print "page_list split:"
-        print applist
-        print ""
-    #Applications in page list are like "/the_name_of_the_app"
-    matchapp = "/"+args.nameapp
-    match = False     #Flag
-    for application in applist:
-        application = application.split(":")
-        if matchapp == application[0]:
-            match=True
-            break
-    #If match app
-    if match:
-        if application[1]=="running":
-            output = args.nameapp+" is running"
-            exit_status="OK"
-        elif application[1]=="stopped":
-            output = args.nameapp+" is stopped"
-            exit_status="WARNING"
-            perfdata=application[2]
+        #for versions upper Tomcat 6
+        if (int(tomcat_version) > 6):
+            url_list = args.URL+"/text/list"
         else:
-            output = "I can't understand the state "+application[1]
-            exit_status="WARNING"
-        #perfdata is the number of sessions for the application
-        perfdata="'sessions'="+application[2]
-    #If not match app
-    else:
-        output = "I can't find the "+matchapp+" application in the tomcat server"
-        exit_status="CRITICAL"
+            url_list = args.URL+"/list"
+
+        #read application list page
+        page_list,error_list = read_page(args.host,args.port,url_list,args.user,args.authentication)
+        #If list page is not read
+        if error_list:
+            output="I can't read the list page of tomcat manager "+page_list
+            exit_status='UNKNOWN'
+        #If list page is read
+        else:
+            #Divide page_list in lines, each line is an application in the tomcat server
+            applist = page_list.splitlines()
+            if args.verbosity>1:
+                print "page_list split:"
+                print applist
+                print ""
+            #Applications in page list are like "/the_name_of_the_app"
+            matchapp = "/"+args.nameapp
+            match = False     #Flag
+            for application in applist:
+                application = application.split(":")
+                if matchapp == application[0]:
+                    match=True
+                    break
+            #If match app
+            if match:
+                if application[1]=="running":
+                    output = args.nameapp+" is running"
+                    exit_status="OK"
+                elif application[1]=="stopped":
+                    output = args.nameapp+" is stopped"
+                    exit_status="WARNING"
+                else:
+                    output = "I can't understand the state "+application[1]
+                    exit_status="WARNING"
+                #perfdata is the number of sessions for the application
+                perfdata="'sessions'="+application[2]
+            #If not match app
+            else:
+                output = "I can't find the "+matchapp+" application in the tomcat server"
+                exit_status="CRITICAL"
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+#Outputs
 
 if output=='':
     output = "ERROR: no output"
