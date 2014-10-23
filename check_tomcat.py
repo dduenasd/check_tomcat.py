@@ -226,8 +226,13 @@ def read_page(host,port,url,user,password):
         page = handle.read()
         # End of Open manager status
     except urllib2.HTTPError as e:
-       page="ERROR: The server couldn\'t fulfill the request. Error code: %s" %(e.code)
-       error = True
+        if(e.code==401):
+            page="ERROR: Unauthorized, your user not have permissions. %s" %(e)
+        elif(e.code==403):
+            page="ERROR: Forbidden, yours credentials are not correct. %s" %(e)
+        else:
+            page="ERROR: The server couldn\'t fulfill the request. %s" %(e)
+        error=True
     except urllib2.URLError as e:
        page = 'ERROR: We failed to reach a server. Reason: %s' %(e.reason)
        error = True
