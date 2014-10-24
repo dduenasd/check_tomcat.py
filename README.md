@@ -63,8 +63,6 @@ where 10.20.40.20 is the ip of the tomcat server, nagioscheck and pass are the c
 
 If output is an error, you can execute the command with -v, -vv or -vvv for verbose output, this can help you to find the problem.
 
-
-	
 You must define a command in commands.cfg for nagios, an example:
 <pre><code>
 define command {
