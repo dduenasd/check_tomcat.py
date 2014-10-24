@@ -65,4 +65,24 @@ If output is an error, you can execute the command with -v, -vv or -vvv for verb
 
 
 	
-We must define a command in commands.cfg for nagios, an example:
+You must define a command in commands.cfg for nagios, an example:
+<pre><code>
+define command {
+	command_name   check_tomcat
+	command_line   $USER1$/check_tomcat.py -H $HOSTADDRESS$ -u $USER10$ -p $ARG1$ -a $USER12$ -U $ARG2$ -m $ARG3$ $ARG4$ $ARG5$ $ARG6$
+	register       1
+}	
+</pre></code>
+Now, you can define a service in a service config file (services.cfg for example) for check, for example, the tomcat server memory:
+<pre><code>
+define service {
+	host_name                      	TOMCAT_SERVER
+	service_description            	Tomcat Server Memory
+	use                            	servicio-generico
+	check_command                  	check_tomcat!8080!/manager!mem!-w 80 -c 90
+	contact_groups                 	grupo-sistemas
+	icon_image                     	../logos2/tomcat.png
+	register                       	1
+}	
+</pre></code>
+Note: In the example, a lot of required parameters are defined in the template "servicio-generico" 
