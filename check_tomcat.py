@@ -221,7 +221,7 @@ def read_page(host,port,url,user,password):
         opener=urllib2.build_opener(handler)
         urllib2.install_opener(opener)
         req = urllib2.Request(url_tomcat)
-        handle = urllib2.urlopen(req,None,5)
+        handle = urllib2.urlopen(req, None)
         # Store all page in a variable
         page = handle.read()
         # End of Open manager status
@@ -236,6 +236,9 @@ def read_page(host,port,url,user,password):
     except urllib2.URLError as e:
        page = 'ERROR: We failed to reach a server. Reason: %s' %(e.reason)
        error = True
+    except socket.timeout as e:
+        page = 'ERROR: Timeout error'
+        error = True
     except socket.error as e:
        page = "ERROR: Dammit! I can't connect with host "+args.host+":"+args.port
        error = True
@@ -268,6 +271,7 @@ parser.add_argument('-v', '--verbosity',action="count",
                     -vv Multi line, configuration debug output (eg ps command used)
                     -vvv Lots of detail for plugin problem diagnosis
                     ''')
+
 # Connection parameters
 conn_parameters = parser.add_argument_group('Connection parameters',
                   'parameters for Tomcat connection')
@@ -289,6 +293,9 @@ conn_parameters.add_argument('-U','--URL',
                     help='''Tomcat manager app url "/manager" by default''')
 conn_parameters.add_argument('-C','--connector',
                     help='''Connector name, used in thread mode''')
+conn_parameters.add_argument('-t', '--timeout',
+                    default = "5",
+                    help='''Timeout for connection (5 seconds by default)''')
 
 parameters = parser.add_argument_group('Check parameters',
              'Parameters for tomcat check')
@@ -334,6 +341,9 @@ if args.verbosity:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #MODE OPTIONS LOGIC
 #-------------------------------------------------------------------------
+
+#Set timeout global
+socket.setdefaulttimeout(float(args.timeout))
 
 #read serviceinfo
 url_serverinfo = args.URL+"/serverinfo"
