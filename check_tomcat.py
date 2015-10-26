@@ -58,7 +58,7 @@ from math import log
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #VARIABLE DEFINITIONS
 #--------------------------------------------------------------------------
-version="2.0"   #Plugin version
+version="2.1"   #Plugin version
 status = { 'OK' : 0 , 'WARNING' : 1, 'CRITICAL' : 2 , 'UNKNOWN' : 3}
 exit_status = 'OK'
 output = ""
