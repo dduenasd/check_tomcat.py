@@ -173,7 +173,7 @@ def sizeof_fmt(num):
         exponent = min(int(log(num, 1024)), len(unit_list) - 1)
         quotient = float(num) / 1024**exponent
         unit, num_decimals = unit_list[exponent]
-        format_string = '{:.%sf} {}' % (num_decimals)
+        format_string = '{0:.%sf} {1}' % (num_decimals)
         return format_string.format(quotient, unit)
     elif num == 0:
         return '0 bytes'
@@ -573,3 +573,4 @@ if longoutput!="":
     message = message + longoutput
 print message
 sys.exit(status[exit_status])
+
