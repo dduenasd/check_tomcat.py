@@ -296,6 +296,10 @@ conn_parameters.add_argument('-C','--connector',
 conn_parameters.add_argument('-t', '--timeout',
                     default = "5",
                     help='''Timeout for connection (5 seconds by default)''')
+conn_parameters.add_argument('-e','--expire_time',
+                    default = "0",
+                    help='''Expire time for sessions created in tomcat manager app
+                    value in minutes (0 minutes by default)''')
 
 parameters = parser.add_argument_group('Check parameters',
              'Parameters for tomcat check')
@@ -566,9 +570,9 @@ if args.mode == 'app':
 #If serverinfo is read
 if not error_serverinfo:
     if (int(tomcat_version) > 6):
-        url_expire = args.URL+"/text/expire?path="+args.URL+"&idle=0"
+        url_expire = args.URL+"/text/expire?path="+args.URL+"&idle="+args.expire_time
     else:
-        url_expire = args.URL+"/expire?path="+args.URL+"&idle=0"
+        url_expire = args.URL+"/expire?path="+args.URL+"&idle="+args.expire_time
     #for versions upper Tomcat 6
     #Expire sessions of manager app
     page_expire,error_expire = read_page(args.host,args.port,url_expire,args.user,args.authentication)
