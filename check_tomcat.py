@@ -561,6 +561,28 @@ if args.mode == 'app':
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
+#Expire sessions
+
+#If serverinfo is read
+if not error_serverinfo:
+    if (int(tomcat_version) > 6):
+        url_expire = args.URL+"/text/expire?path="+args.URL+"&idle=0"
+    else:
+        url_expire = args.URL+"/expire?path="+args.URL+"&idle=0"
+    #for versions upper Tomcat 6
+    #Expire sessions of manager app
+    page_expire,error_expire = read_page(args.host,args.port,url_expire,args.user,args.authentication)
+if (args.verbosity>0):
+    if not error_expire:
+        print("Expire sessions of "+args.URL)
+    if (args.verbosity>1):
+        print("Expire information:")
+        print(page_expire)
+
+
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 #Outputs
 
 if output=='':
