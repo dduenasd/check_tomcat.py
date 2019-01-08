@@ -470,12 +470,14 @@ if args.mode == 'thread':
         exit_status = 'WARNING'
     else:
         if tree_xml!=None:
+            output = ""
             #control warning and critical values
             if (args.warning==None) or (args.critical==None):
                 parser.print_usage()
                 parser.exit(status['UNKNOWN'],
                             'ERROR: Warning and critical values of number of threads open is requiered with mode "thread"\n')
             if(args.connector==None):
+                exit_status = "OK"
                 if (args.verbosity>0): print "Finding all connectors"
                 for connector in tree_xml.findall('./connector'):
                     connector_name = str(connector.get('name'))
